@@ -23,7 +23,9 @@ class CashCardApplicationTest {
 
     @Test
     void shouldReturnACashCardWhenDataIsSaved() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/cashcards/99", String.class);
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity("/cashcards/99", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -38,7 +40,9 @@ class CashCardApplicationTest {
 
     @Test
     void shouldNotReturnACashCardWithAnUnknownId() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/cashcards/1000", String.class);
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity("/cashcards/1000", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).isBlank();
@@ -47,14 +51,18 @@ class CashCardApplicationTest {
     @Test
     @DirtiesContext
     void shouldCreateANewCashCard() {
-        CashCard newCashCard = new CashCard(null, 250.00);
-        ResponseEntity<Void> createResponse = restTemplate.postForEntity("/cashcards", newCashCard, Void.class);
+        CashCard newCashCard = new CashCard(null, 250.00, "sarah1");
+        ResponseEntity<Void> createResponse = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .postForEntity("/cashcards", newCashCard, Void.class);
 
         assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         URI locationOfNewCashCard = createResponse.getHeaders().getLocation();
 
-        ResponseEntity<String> getResponse = restTemplate.getForEntity(locationOfNewCashCard, String.class);
+        ResponseEntity<String> getResponse = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity(locationOfNewCashCard, String.class);
 
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -69,7 +77,9 @@ class CashCardApplicationTest {
 
     @Test
     void shouldReturnAllCashCardsWhenListIsRequested() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/cashcards", String.class);
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity("/cashcards", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -87,7 +97,9 @@ class CashCardApplicationTest {
 
     @Test
     void shouldReturnAPageOfCashCards() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/cashcards?page=0&size=1", String.class);
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity("/cashcards?page=0&size=1", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -99,7 +111,9 @@ class CashCardApplicationTest {
 
     @Test
     void shouldReturnASortedPageOfCashCards() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/cashcards?page=0&size=1&sort=amount,desc", String.class);
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("sarah1", "abc123")
+                .getForEntity("/cashcards?page=0&size=1&sort=amount,desc", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
@@ -110,5 +124,20 @@ class CashCardApplicationTest {
 
         double amount = documentContext.read("$[0].amount");
         assertThat(amount).isEqualTo(150.00);
+    }
+
+    @Test
+    void shouldNotReturnACashCardWhenUsingBadCredentials() {
+        ResponseEntity<String> response = restTemplate
+                .withBasicAuth("BAD-USER", "abc123")
+                .getForEntity("/cashcards/99", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        response = restTemplate
+                .withBasicAuth("sarah1", "BAD-PASSWORD")
+                .getForEntity("/cashcards/99", String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 }
